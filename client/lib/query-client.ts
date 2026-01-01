@@ -12,6 +12,12 @@ export function getApiUrl(): string {
     throw new Error("EXPO_PUBLIC_DOMAIN is not set");
   }
 
+  // If host already has protocol (http:// or https://), use it directly
+  if (host.startsWith("http://") || host.startsWith("https://")) {
+    let url = new URL(host);
+    return url.href;
+  }
+
   // Use http for localhost and local network IPs, https for everything else
   const isLocalNetwork = 
     host.includes("localhost") || 
@@ -33,7 +39,13 @@ export function getApiUrl(): string {
 }
 
 function getApiKey(): string {
-  return Constants.expoConfig?.extra?.EXPO_PUBLIC_API_KEY || process.env.EXPO_PUBLIC_API_KEY || "";
+  // In Expo, EXPO_PUBLIC_ prefixed variables are available via process.env
+  const apiKey = 
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_API_KEY || 
+    process.env.EXPO_PUBLIC_API_KEY || 
+    "";
+  
+  return apiKey;
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -56,26 +68,31 @@ export async function apiRequest(
   route: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const baseUrl = getApiUrl();
-  const url = new URL(route, baseUrl);
+  try {
+    const baseUrl = getApiUrl();
+    const url = new URL(route, baseUrl);
 
-  const headers: Record<string, string> = {
-    ...getAuthHeaders(),
-  };
-  
-  if (data) {
-    headers["Content-Type"] = "application/json";
+    const headers: Record<string, string> = {
+      ...getAuthHeaders(),
+    };
+    
+    if (data) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error(`API request failed [${method} ${route}]:`, (error as Error)?.message);
+    throw error;
   }
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

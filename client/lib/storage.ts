@@ -14,13 +14,7 @@ export const defaultSettings: ShopSettings = {
 };
 
 async function fetchApi<T>(path: string): Promise<T> {
-  const baseUrl = getApiUrl();
-  const url = new URL(path, baseUrl);
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`${res.status}: ${text}`);
-  }
+  const res = await apiRequest("GET", path);
   return res.json();
 }
 

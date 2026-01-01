@@ -99,7 +99,7 @@ This creates all necessary tables (customers, invoices, products, categories, se
 ### Run Both Backend and Frontend
 
 ```bash
-npm run dev
+npm run server:dev
 ```
 
 This starts:
