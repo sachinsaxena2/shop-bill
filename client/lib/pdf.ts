@@ -272,9 +272,8 @@ export const generateInvoiceHtml = (
         <div class="footer">
           <p style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">Thank you for shopping with us!</p>
           <div style="background: #FEF3C7; padding: 12px 16px; border-radius: 6px; display: inline-block; text-align: left; margin-bottom: 16px;">
-            <p style="margin: 0 0 4px 0; color: #78350F; font-size: 12px;">Exchange applicable only within 2 days</p>
-            <p style="margin: 0 0 4px 0; color: #78350F; font-size: 12px;">Sale items are final sale</p>
-            <p style="margin: 0; color: #78350F; font-size: 12px;">No exchange on jewellery</p>
+            <p style="margin: 0 0 4px 0; color: #78350F; font-size: 12px;">Exchange is applicable only within 2 days</p>
+            <p style="margin: 0; color: #78350F; font-size: 12px;">No exchange on jewellery and sale items.</p>
           </div>
           <p style="font-size: 11px; color: #9CA3AF;">This is a computer-generated invoice.</p>
         </div>

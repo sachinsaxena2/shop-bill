@@ -198,13 +198,18 @@ const styles = StyleSheet.create({
     marginRight: Spacing.xs,
   },
   priceInput: {
-    flex: 1,
+    // Fixed width to accommodate ~6 digits comfortably
+    width: 96,
     height: 36,
     borderWidth: 1,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
+    paddingVertical: 0,
     fontSize: Typography.body.fontSize,
-    textAlignVertical: "center",
+    textAlign: "right",
+    // Use padding instead of textAlignVertical for better cross-platform support
+    includeFontPadding: false,
+    lineHeight: 20,
   },
   totalContainer: {
     flex: 1.2,

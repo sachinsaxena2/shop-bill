@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
@@ -54,6 +55,41 @@ function setupCors(app: express.Application) {
   app.use((req, res, next) => {
     const origins = new Set<string>();
 
+    // Parse allowed origins from environment variable
+    if (process.env.ALLOWED_ORIGINS) {
+      const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim());
+      allowedOrigins.forEach((origin) => {
+        // If origin doesn't have protocol, determine http/https based on pattern
+        if (!origin.startsWith("http://") && !origin.startsWith("https://")) {
+          // Use http for localhost and local IPs, https for everything else
+          const isLocal = origin.includes("localhost") || 
+                         origin.startsWith("127.") || 
+                         origin.startsWith("192.168.") ||
+                         origin.startsWith("10.") ||
+                         origin.startsWith("172.16.") ||
+                         origin.startsWith("172.17.") ||
+                         origin.startsWith("172.18.") ||
+                         origin.startsWith("172.19.") ||
+                         origin.startsWith("172.2") ||
+                         origin.startsWith("172.30.") ||
+                         origin.startsWith("172.31.");
+          const protocol = isLocal ? "http" : "https";
+          origins.add(`${protocol}://${origin}`);
+        } else {
+          origins.add(origin);
+        }
+      });
+    }
+
+    // Fallback: Allow localhost for development if no origins specified
+    if (origins.size === 0) {
+      origins.add("http://localhost:8081");
+      origins.add("http://localhost:3000");
+      origins.add("http://127.0.0.1:8081");
+      origins.add("http://127.0.0.1:3000");
+    }
+
+    // Legacy: Support for Replit deployment
     if (process.env.REPLIT_DEV_DOMAIN) {
       origins.add(`https://${process.env.REPLIT_DEV_DOMAIN}`);
     }
@@ -303,8 +339,7 @@ function setupErrorHandler(app: express.Application) {
   server.listen(
     {
       port,
-      host: "0.0.0.0",
-      reusePort: true,
+      host: "0.0.0.0", // Listen on all network interfaces
     },
     () => {
       log(`express server serving on port ${port}`);

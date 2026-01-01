@@ -39,7 +39,19 @@ NODE_ENV=production
 PORT=5000
 DATABASE_URL=postgresql://username:password@host:5432/nazaara_db
 API_KEY=your-secure-api-key-here
+
+# CORS Configuration
+# Add all your frontend URLs (comma-separated)
+# For production, use full URLs with https://
+# Example: https://app.yoursite.com,https://www.yoursite.com
+ALLOWED_ORIGINS=https://api.yoursite.com
 ```
+
+**Important CORS Notes:**
+- Add **all** domains where your mobile app or web frontend will run
+- Use full URLs with `https://` for production domains
+- For multiple origins, separate with commas (no spaces)
+- Example: `ALLOWED_ORIGINS=https://app.yoursite.com,https://admin.yoursite.com`
 
 ### Step 5: Initialize Database
 ```bash
@@ -140,6 +152,7 @@ This will:
 | `PORT` | Server port | `5000` |
 | `DATABASE_URL` | PostgreSQL connection | `postgresql://user:pass@host:5432/db` |
 | `API_KEY` | Secret key for API auth | `nz2024-aBcD1234-xYz5678` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `https://app.yoursite.com,https://admin.yoursite.com` |
 
 ### Mobile App (eas.json)
 | Variable | Description | Example |
@@ -167,6 +180,13 @@ Open in browser: `https://api.yoursite.com/api-docs`
 - Check if EXPO_PUBLIC_DOMAIN matches your backend URL
 - Verify API_KEY matches in both backend and app
 - Ensure backend is running and accessible
+- **Check ALLOWED_ORIGINS includes your app's domain**
+
+### CORS errors in production
+- Verify `ALLOWED_ORIGINS` in `.env` includes all frontend URLs
+- Ensure origins use full URLs with `https://` protocol
+- Check for typos in domain names
+- Multiple origins must be comma-separated (no spaces)
 
 ### API returns 401 Unauthorized
 - Verify API_KEY is set in server environment

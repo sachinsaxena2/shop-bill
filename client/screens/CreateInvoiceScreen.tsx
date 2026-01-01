@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, StyleSheet, Pressable, Alert, Modal, FlatList, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Alert, Modal, FlatList, ScrollView, TextInput } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
@@ -295,15 +295,14 @@ export default function CreateInvoiceScreen() {
               </View>
               <View style={[styles.discountInput, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
                 <Feather name="minus" size={14} color={theme.textSecondary} />
-                <View style={styles.discountInputField}>
-                  <Input
-                    value={discountValue}
-                    onChangeText={setDiscountValue}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    style={styles.discountTextInput}
-                  />
-                </View>
+                <TextInput
+                  value={discountValue}
+                  onChangeText={setDiscountValue}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={theme.placeholder}
+                  style={[styles.discountTextInput, { color: theme.text }]}
+                />
               </View>
             </View>
           </View>
@@ -526,16 +525,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    width: 80,
-  },
-  discountInputField: {
-    flex: 1,
+    // Match height with price input
+    height: 36,
+    // Fit icon + input for ~4 digits
+    width: 88,
   },
   discountTextInput: {
-    height: 36,
-    marginBottom: 0,
-    borderWidth: 0,
+    flex: 1,
+    height: "100%",
     paddingHorizontal: Spacing.xs,
+    paddingVertical: 0,
+    fontSize: 16,
+    textAlign: "right",
+    // No border since container has it
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    // Ensure text stays within bounds
+    minWidth: 0,
   },
   totalRow: {
     flexDirection: "row",

@@ -59,9 +59,10 @@ export const generateInvoiceMessage = (invoice: Invoice, settings: ShopSettings,
   lines.push(`*TOTAL: ${formatCurrency(Number(invoice.total) || 0, settings.currency)}*`);
   lines.push("----------------------------");
   lines.push("");
-  lines.push("Thank you for shopping with us!");
+  lines.push("Thank you for shopping with us :)");
   lines.push("");
-  lines.push("_Exchange applicable only within 2 days. Sale items are final sale. No exchange on jewellery._");
+  lines.push("_Exchange is applicable only within 2 days_");
+  lines.push("_No exchange on jewellery and sale items._");
   
   return lines.join("\n");
 };
