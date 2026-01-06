@@ -10,8 +10,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "YOUR_BACKEND_DOMAIN_HERE",
-        "EXPO_PUBLIC_API_KEY": "YOUR_API_KEY_HERE"
+        "EXPO_PUBLIC_DOMAIN": "http://35.208.236.54",
+        "EXPO_PUBLIC_API_KEY": "nazZEw5vhOhw1tLBGTwVhxs9MQrW2hjhY4h"
       }
     },
     "preview": {
@@ -20,8 +20,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "YOUR_BACKEND_DOMAIN_HERE",
-        "EXPO_PUBLIC_API_KEY": "YOUR_API_KEY_HERE"
+        "EXPO_PUBLIC_DOMAIN": "http://35.208.236.54",
+        "EXPO_PUBLIC_API_KEY": "nazZEw5vhOhw1tLBGTwVhxs9MQrW2hjhY4h"
       }
     },
     "production": {
@@ -29,8 +29,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "YOUR_BACKEND_DOMAIN_HERE",
-        "EXPO_PUBLIC_API_KEY": "YOUR_API_KEY_HERE"
+        "EXPO_PUBLIC_DOMAIN": "http://35.208.236.54",
+        "EXPO_PUBLIC_API_KEY": "nazZEw5vhOhw1tLBGTwVhxs9MQrW2hjhY4h"
       }
     }
   },

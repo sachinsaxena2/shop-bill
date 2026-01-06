@@ -1,14 +1,31 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import Constants from "expo-constants";
+import { Alert } from "react-native";
+
+/**
+ * Shows an error alert to the user
+ */
+function showErrorAlert(title: string, message: string) {
+  Alert.alert(
+    title,
+    message,
+    [{ text: "OK", style: "default" }],
+    { cancelable: true }
+  );
+}
 
 /**
  * Gets the base URL for the Express API server (e.g., "http://localhost:3000")
  * @returns {string} The API base URL
  */
 export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
+  // In production APK, use Constants.expoConfig.extra (set via app.config.js during build)
+  // In development, use process.env
+  let host = Constants.expoConfig?.extra?.EXPO_PUBLIC_DOMAIN || process.env.EXPO_PUBLIC_DOMAIN;
 
   if (!host) {
+    console.error("❌ EXPO_PUBLIC_DOMAIN is not set!");
+    console.error("Available Constants.expoConfig.extra:", Constants.expoConfig?.extra);
     throw new Error("EXPO_PUBLIC_DOMAIN is not set");
   }
 
@@ -39,7 +56,8 @@ export function getApiUrl(): string {
 }
 
 function getApiKey(): string {
-  // In Expo, EXPO_PUBLIC_ prefixed variables are available via process.env
+  // In production APK, use Constants.expoConfig.extra (set via app.config.js during build)
+  // In development, use process.env
   const apiKey = 
     Constants.expoConfig?.extra?.EXPO_PUBLIC_API_KEY || 
     process.env.EXPO_PUBLIC_API_KEY || 
@@ -69,17 +87,33 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   try {
+    console.log(`\n========== API REQUEST DEBUG ==========`);
+    console.log(`📍 Route: ${route}`);
+    console.log(`🔧 Method: ${method}`);
+    
     const baseUrl = getApiUrl();
+    console.log(`🌍 Base URL: ${baseUrl}`);
+    
     const url = new URL(route, baseUrl);
+    console.log(`🔗 Full URL: ${url.toString()}`);
 
     const headers: Record<string, string> = {
       ...getAuthHeaders(),
     };
     
+    console.log(`🔑 Headers being sent:`);
+    console.log(JSON.stringify(headers, null, 2));
+    console.log(`🔑 X-API-Key present: ${headers['X-API-Key'] ? 'YES ✅' : 'NO ❌'}`);
+    console.log(`🔑 X-API-Key value: ${headers['X-API-Key'] || 'MISSING'}`);
+    
     if (data) {
       headers["Content-Type"] = "application/json";
+      console.log(`📦 Request body: ${JSON.stringify(data).substring(0, 100)}...`);
     }
 
+    console.log(`🚀 Initiating fetch request...`);
+    const fetchStartTime = Date.now();
+    
     const res = await fetch(url, {
       method,
       headers,
@@ -87,10 +121,54 @@ export async function apiRequest(
       credentials: "include",
     });
 
+    const fetchDuration = Date.now() - fetchStartTime;
+    console.log(`✅ Fetch completed in ${fetchDuration}ms`);
+    console.log(`📡 Status: ${res.status} ${res.statusText}`);
+    console.log(`📥 Response headers:`, JSON.stringify(Object.fromEntries(res.headers.entries()), null, 2));
+    console.log(`========== END DEBUG ==========\n`);
+    
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
-    console.error(`API request failed [${method} ${route}]:`, (error as Error)?.message);
+    const errorMessage = (error as Error)?.message || 'Unknown error';
+    const errorTitle = 'API Request Failed';
+    
+    console.error(`\n========== API REQUEST ERROR ==========`);
+    console.error(`❌ Request: ${method} ${route}`);
+    console.error(`❌ Error Type: ${error?.constructor?.name}`);
+    console.error(`❌ Error Message: ${errorMessage}`);
+    console.error(`❌ Stack: ${(error as Error)?.stack}`);
+    
+    // Try to get more details about network error
+    if (errorMessage.includes('Network request failed')) {
+      console.error(`\n🔍 NETWORK ERROR DIAGNOSIS:`);
+      console.error(`   • URL attempted: ${new URL(route, getApiUrl()).toString()}`);
+      console.error(`   • This is a cleartext HTTP request to an IP address`);
+      console.error(`   • Android may be blocking this for security`);
+      console.error(`   • Check: networkSecurityConfig in app.json`);
+      console.error(`   • Check: usesCleartextTraffic setting`);
+    }
+    console.error(`========== END ERROR ==========\n`);
+    
+    // Show error popup to user
+    let userMessage = '';
+    
+    if (errorMessage.includes('Network request failed')) {
+      userMessage = `Cannot connect to server.\n\nPlease check:\n• Internet connection\n• Server is running at ${getApiUrl()}\n\nThis may be an Android security restriction on HTTP traffic.`;
+    } else if (errorMessage.includes('401')) {
+      userMessage = 'Authentication failed. Please check API key.';
+    } else if (errorMessage.includes('403')) {
+      userMessage = 'Access forbidden. Please check permissions.';
+    } else if (errorMessage.includes('404')) {
+      userMessage = `Endpoint not found: ${route}`;
+    } else if (errorMessage.includes('500')) {
+      userMessage = 'Server error. Please try again later.';
+    } else {
+      userMessage = `${errorMessage}\n\nEndpoint: ${method} ${route}`;
+    }
+    
+    showErrorAlert(errorTitle, userMessage);
+    
     throw error;
   }
 }

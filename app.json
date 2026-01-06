@@ -2,11 +2,11 @@
   "expo": {
     "name": "Nazaara",
     "slug": "nazaara-billing",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nazaara",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -21,7 +21,10 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nazaara.billing"
+      "package": "com.nazaara.billing",
+      "versionCode": 3,
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": "./android-network-security-config.xml"
     },
     "web": {
       "output": "single",
@@ -40,10 +43,25 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_API_KEY": "nazZEw5vhOhw1tLBGTwVhxs9MQrW2hjhY4h",
+      "EXPO_PUBLIC_DOMAIN": "http://35.208.236.54",
+      "eas": {
+        "projectId": "a23aa57a-b097-4327-9bc1-763a5aad66c3"
+      }
     }
   }
 }

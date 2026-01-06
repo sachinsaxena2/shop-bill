@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import Constants from "expo-constants";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -155,7 +156,10 @@ export default function SettingsScreen() {
 
         <View style={styles.footer}>
           <ThemedText type="caption" secondary style={styles.footerText}>
-            Nazaara Billing App v1.0.0
+            Nazaara Billing App v{Constants.expoConfig?.version || '1.0.0'}
+          </ThemedText>
+          <ThemedText type="caption" secondary style={styles.footerText}>
+            Build {Constants.expoConfig?.android?.versionCode || '1'}
           </ThemedText>
           <ThemedText type="caption" secondary style={styles.footerText}>
             Retail Billing Made Simple
