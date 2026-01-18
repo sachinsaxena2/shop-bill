@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, Pressable, RefreshControl, TextInput, Modal
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -24,6 +25,7 @@ type FilterType = "all" | "today" | "week" | "month" | "custom";
 export default function InvoicesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all");
@@ -289,7 +291,7 @@ export default function InvoicesScreen() {
         onRequestClose={() => setShowFilterModal(false)}
       >
         <ThemedView style={styles.modalContainer}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border, paddingTop: insets.top + Spacing.lg }]}>
             <Pressable onPress={() => setShowFilterModal(false)}>
               <ThemedText type="link">Cancel</ThemedText>
             </Pressable>

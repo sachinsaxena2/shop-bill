@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, RefreshControl, Alert, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -32,6 +33,7 @@ const AVAILABLE_ICONS = [
 
 export default function ProductsScreen() {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -99,7 +101,7 @@ export default function ProductsScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await storage.deleteCategory(category.categoryId);
+            await storage.deleteCategory(category.id);
             loadData();
           },
         },
@@ -124,7 +126,7 @@ export default function ProductsScreen() {
         Alert.alert("Error", "A category with this name already exists");
         return;
       }
-      await storage.updateCategory(editingCategory.categoryId, {
+      await storage.updateCategory(editingCategory.id, {
         label: categoryName.trim(),
         icon: categoryIcon,
       });
@@ -160,7 +162,14 @@ export default function ProductsScreen() {
         <ThemedText type="bodyMedium">{item.label}</ThemedText>
         <ThemedText type="caption" secondary>ID: {item.categoryId}</ThemedText>
       </View>
-      <Pressable onPress={() => handleDeleteCategory(item)} style={styles.deleteButton}>
+      <Pressable 
+        onPress={(e) => {
+          e?.stopPropagation?.();
+          handleDeleteCategory(item);
+        }} 
+        style={styles.deleteButton}
+        hitSlop={8}
+      >
         <Feather name="trash-2" size={18} color={theme.error} />
       </Pressable>
     </Pressable>
@@ -204,7 +213,7 @@ export default function ProductsScreen() {
         onRequestClose={() => setShowModal(false)}
       >
         <ThemedView style={styles.modalContainer}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border, paddingTop: insets.top + Spacing.lg }]}>
             <Pressable onPress={() => setShowModal(false)}>
               <ThemedText type="link">Cancel</ThemedText>
             </Pressable>

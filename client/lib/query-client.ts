@@ -21,13 +21,12 @@ function showErrorAlert(title: string, message: string) {
 export function getApiUrl(): string {
   // In production APK, use Constants.expoConfig.extra (set via app.config.js during build)
   // In development, use process.env
-  let host = Constants.expoConfig?.extra?.EXPO_PUBLIC_DOMAIN || process.env.EXPO_PUBLIC_DOMAIN;
+  let host = Constants.expoConfig?.extra?.EXPO_PUBLIC_DOMAIN || process.env.EXPO_PUBLIC_DOMAIN || "http://192.168.1.18:3000";
 
-  if (!host) {
-    console.error("❌ EXPO_PUBLIC_DOMAIN is not set!");
-    console.error("Available Constants.expoConfig.extra:", Constants.expoConfig?.extra);
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
-  }
+  console.log("🌍 Domain Source Check:");
+  console.log("  - Constants.expoConfig.extra.EXPO_PUBLIC_DOMAIN:", Constants.expoConfig?.extra?.EXPO_PUBLIC_DOMAIN);
+  console.log("  - process.env.EXPO_PUBLIC_DOMAIN:", process.env.EXPO_PUBLIC_DOMAIN);
+  console.log("  - Final host:", host);
 
   // If host already has protocol (http:// or https://), use it directly
   if (host.startsWith("http://") || host.startsWith("https://")) {
@@ -57,11 +56,16 @@ export function getApiUrl(): string {
 
 function getApiKey(): string {
   // In production APK, use Constants.expoConfig.extra (set via app.config.js during build)
-  // In development, use process.env
+  // In development, use process.env or fallback to hardcoded value for local dev
   const apiKey = 
     Constants.expoConfig?.extra?.EXPO_PUBLIC_API_KEY || 
     process.env.EXPO_PUBLIC_API_KEY || 
-    "";
+    "nazZEw5vhOhw1tLBGTwVhxs9MQrW2hjhY4h"; // Fallback for local development
+  
+  console.log("🔑 API Key Source Check:");
+  console.log("  - Constants.expoConfig.extra:", Constants.expoConfig?.extra);
+  console.log("  - process.env.EXPO_PUBLIC_API_KEY:", process.env.EXPO_PUBLIC_API_KEY);
+  console.log("  - Final API Key:", apiKey);
   
   return apiKey;
 }

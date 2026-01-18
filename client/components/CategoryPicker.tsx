@@ -20,7 +20,10 @@ export function CategoryPicker({ selectedCategory, onSelectCategory, showAll = f
 
   useEffect(() => {
     if (propCategories) {
-      setCategories(propCategories.map(c => ({ id: c.categoryId, label: c.label, icon: c.icon })));
+      const sorted = propCategories
+        .map(c => ({ id: c.categoryId, label: c.label, icon: c.icon }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+      setCategories(sorted);
     } else {
       loadCategories();
     }
@@ -30,12 +33,22 @@ export function CategoryPicker({ selectedCategory, onSelectCategory, showAll = f
     try {
       const cats = await storage.getCategories();
       if (cats.length > 0) {
-        setCategories(cats.filter(c => c.isActive).map(c => ({ id: c.categoryId, label: c.label, icon: c.icon })));
+        const sorted = cats
+          .filter(c => c.isActive)
+          .map(c => ({ id: c.categoryId, label: c.label, icon: c.icon }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        setCategories(sorted);
       } else {
-        setCategories(DefaultCategories.map(c => ({ id: c.id, label: c.label, icon: c.icon })));
+        const sorted = DefaultCategories
+          .map(c => ({ id: c.id, label: c.label, icon: c.icon }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        setCategories(sorted);
       }
     } catch (error) {
-      setCategories(DefaultCategories.map(c => ({ id: c.id, label: c.label, icon: c.icon })));
+      const sorted = DefaultCategories
+        .map(c => ({ id: c.id, label: c.label, icon: c.icon }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+      setCategories(sorted);
     }
   };
 

@@ -389,9 +389,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *         required: true
    *         schema:
    *           type: string
+   *         description: Invoice ID (UUID)
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               customerId:
+   *                 type: string
+   *               customerName:
+   *                 type: string
+   *               customerPhone:
+   *                 type: string
+   *               status:
+   *                 type: string
+   *                 enum: [paid, pending, cancelled]
+   *               items:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *               subtotal:
+   *                 type: number
+   *               discountType:
+   *                 type: string
+   *                 enum: [percent, fixed]
+   *               discountValue:
+   *                 type: number
+   *               discountAmount:
+   *                 type: number
+   *               total:
+   *                 type: number
+   *               notes:
+   *                 type: string
    *     responses:
    *       200:
-   *         description: Invoice updated
+   *         description: Invoice updated successfully
+   *       404:
+   *         description: Invoice not found
    *   delete:
    *     summary: Delete an invoice
    *     tags: [Invoices]
@@ -401,9 +437,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *         required: true
    *         schema:
    *           type: string
+   *         description: Invoice ID (UUID)
    *     responses:
    *       200:
-   *         description: Invoice deleted
+   *         description: Invoice deleted successfully
+   *       404:
+   *         description: Invoice not found
    */
   app.get("/api/invoices/:id", async (req, res) => {
     try {
@@ -542,9 +581,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *   post:
    *     summary: Create a new category
    *     tags: [Categories]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               categoryId:
+   *                 type: string
+   *               label:
+   *                 type: string
+   *               icon:
+   *                 type: string
+   *               isActive:
+   *                 type: boolean
+   *               sortOrder:
+   *                 type: integer
    *     responses:
    *       201:
    *         description: Category created
+   * /api/categories/{id}:
+   *   put:
+   *     summary: Update a category
+   *     tags: [Categories]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Category ID (UUID)
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               label:
+   *                 type: string
+   *               icon:
+   *                 type: string
+   *               isActive:
+   *                 type: boolean
+   *               sortOrder:
+   *                 type: integer
+   *     responses:
+   *       200:
+   *         description: Category updated successfully
+   *       404:
+   *         description: Category not found
+   *   delete:
+   *     summary: Delete a category
+   *     tags: [Categories]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Category ID (UUID)
+   *     responses:
+   *       200:
+   *         description: Category deleted successfully
+   *       404:
+   *         description: Category not found
    */
   app.get("/api/categories", async (req, res) => {
     try {

@@ -12,8 +12,8 @@ import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, BrandColors, DefaultCategories } from "@/constants/theme";
 import { storage } from "@/lib/storage";
-import { generateInvoiceMessage } from "@/lib/whatsapp";
-import { generatePdfAndShare, sendPdfToWhatsApp } from "@/lib/pdf";
+import { generateInvoiceMessage, sendInvoiceViaWhatsApp } from "@/lib/whatsapp";
+import { generatePdfAndShare } from "@/lib/pdf";
 import { Invoice, InvoiceStatus, ShopSettings, CategoryData } from "@/types";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -119,8 +119,8 @@ export default function InvoiceDetailScreen() {
     if (invoice && settings) {
       setIsSendingWhatsApp(true);
       try {
-        const result = await sendPdfToWhatsApp(invoice, settings, categories);
-        if (result.shared) {
+        const sent = await sendInvoiceViaWhatsApp(invoice, settings, categories);
+        if (sent) {
           await storage.updateInvoice(invoice.id, { status: "paid" });
           setInvoice({ ...invoice, status: "paid" });
         }
@@ -287,6 +287,7 @@ export default function InvoiceDetailScreen() {
               <Pressable
                 key={status}
                 onPress={() => handleUpdateStatus(status)}
+                hitSlop={8}
                 style={[
                   styles.statusButton,
                   { 
@@ -310,7 +311,18 @@ export default function InvoiceDetailScreen() {
         </View>
 
         <Pressable
+          onPress={() => navigation.navigate("CreateInvoice", { invoiceId: invoice.id })}
+          style={[styles.editButton, { backgroundColor: BrandColors.primary + "15", borderColor: BrandColors.primary }]}
+        >
+          <Feather name="edit-2" size={18} color={BrandColors.primary} />
+          <ThemedText type="body" style={{ color: BrandColors.primary, marginLeft: Spacing.sm }}>
+            Edit Invoice
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
           onPress={handleDeleteInvoice}
+          hitSlop={8}
           style={[styles.deleteButton, { borderColor: theme.error }]}
         >
           <Feather name="trash-2" size={18} color={theme.error} />
@@ -455,6 +467,15 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
     alignItems: "center",
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
   },
   deleteButton: {
     flexDirection: "row",

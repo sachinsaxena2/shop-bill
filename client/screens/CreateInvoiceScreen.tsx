@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, StyleSheet, Pressable, Alert, Modal, FlatList, ScrollView, TextInput } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { View, StyleSheet, Pressable, Alert, Modal, ScrollView, TextInput } from "react-native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FlashList } from "@shopify/flash-list";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -53,16 +54,33 @@ export default function CreateInvoiceScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
+  // Refresh data when screen comes into focus (e.g., after adding a customer)
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: editingInvoice ? "Edit Invoice" : "Create Invoice",
+    });
+  }, [editingInvoice, navigation]);
+
   useEffect(() => {
     if (route.params?.customerId) {
       loadCustomerById(route.params.customerId);
     }
-  }, [route.params?.customerId]);
+    if (route.params?.invoiceId) {
+      loadInvoiceForEdit(route.params.invoiceId);
+    }
+  }, [route.params?.customerId, route.params?.invoiceId]);
 
   const loadData = async () => {
     const [customersData, settingsData, categoriesData, invoicesData] = await Promise.all([
@@ -73,24 +91,72 @@ export default function CreateInvoiceScreen() {
     ]);
     setCustomers(customersData);
     setSettings(settingsData);
-    setCategories(categoriesData);
+    setCategories(categoriesData.sort((a, b) => a.label.localeCompare(b.label)));
     setInvoices(invoicesData);
+  };
+
+  const loadInvoiceForEdit = async (invoiceId: string) => {
+    const invoice = await storage.getInvoiceById(invoiceId);
+    if (invoice) {
+      setEditingInvoice(invoice);
+      const customer = await storage.getCustomerById(invoice.customerId);
+      if (customer) setSelectedCustomer(customer);
+      setItems(invoice.items);
+      setDiscountType(invoice.discountType);
+      setDiscountValue(invoice.discountValue.toString());
+      setNotes(invoice.notes || "");
+    }
+  };
+
+  // Memoize customer totals - calculates ONCE when invoices change, not on every render
+  const customerTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    invoices.forEach(inv => {
+      totals[inv.customerId] = (totals[inv.customerId] || 0) + inv.total;
+    });
+    return totals;
+  }, [invoices]);
+
+  // Memoize filtered customers - only filters when search or customers change
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery) return customers;
+    const query = searchQuery.toLowerCase();
+    return customers.filter((c) => 
+      c.name.toLowerCase().includes(query) || 
+      c.phone.includes(query)
+    );
+  }, [customers, searchQuery]);
+
+  // Memoize customer card renderer to prevent recreating function on every render
+  const renderCustomerItem = useCallback(({ item }: { item: Customer }) => (
+    <CustomerCard
+      customer={item}
+      totalPurchases={customerTotals[item.id] || 0}
+      onPress={() => handleSelectCustomer(item)}
+    />
+  ), [customerTotals]);
+
+  const handleOpenCustomerPicker = () => {
+    // Data is already fresh from useFocusEffect, just open the modal
+    setShowCustomerPicker(true);
+  };
+
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerPicker(false);
+    setSearchQuery("");
+  };
+
+  const handleAddNewCustomer = () => {
+    setShowCustomerPicker(false);
+    setSearchQuery("");
+    navigation.navigate("CreateCustomer");
   };
 
   const getCustomerTotalPurchases = (customerId: string): number => {
     return invoices
       .filter(inv => inv.customerId === customerId)
       .reduce((sum, inv) => sum + inv.total, 0);
-  };
-
-  const handleOpenCustomerPicker = async () => {
-    const [customersData, invoicesData] = await Promise.all([
-      storage.getCustomers(),
-      storage.getInvoices(),
-    ]);
-    setCustomers(customersData);
-    setInvoices(invoicesData);
-    setShowCustomerPicker(true);
   };
 
   const loadCustomerById = async (customerId: string) => {
@@ -127,17 +193,6 @@ export default function CreateInvoiceScreen() {
     setShowCategoryPicker(null);
   };
 
-  const handleSelectCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerPicker(false);
-    setSearchQuery("");
-  };
-
-  const handleAddNewCustomer = () => {
-    setShowCustomerPicker(false);
-    navigation.navigate("CreateCustomer");
-  };
-
   const validateInvoice = (): boolean => {
     if (!selectedCustomer) {
       Alert.alert("Error", "Please select a customer");
@@ -162,19 +217,43 @@ export default function CreateInvoiceScreen() {
     try {
       const validItems = items.filter((item) => item.unitPrice > 0);
       
-      const invoice = await storage.saveInvoice({
-        customerId: selectedCustomer.id,
-        customerName: selectedCustomer.name,
-        customerPhone: selectedCustomer.phone,
-        status: sendWhatsApp ? "paid" : "pending",
-        items: validItems,
-        subtotal,
-        discountType,
-        discountValue: parseFloat(discountValue) || 0,
-        discountAmount,
-        total,
-        notes: notes || undefined,
-      });
+      let invoice: Invoice;
+      
+      if (editingInvoice) {
+        // Update existing invoice
+        const updated = await storage.updateInvoice(editingInvoice.id, {
+          customerId: selectedCustomer.id,
+          customerName: selectedCustomer.name,
+          customerPhone: selectedCustomer.phone,
+          status: sendWhatsApp ? "paid" : editingInvoice.status,
+          items: validItems,
+          subtotal,
+          discountType,
+          discountValue: parseFloat(discountValue) || 0,
+          discountAmount,
+          total,
+          notes: notes || undefined,
+        });
+        if (!updated) {
+          throw new Error("Failed to update invoice");
+        }
+        invoice = updated;
+      } else {
+        // Create new invoice
+        invoice = await storage.saveInvoice({
+          customerId: selectedCustomer.id,
+          customerName: selectedCustomer.name,
+          customerPhone: selectedCustomer.phone,
+          status: sendWhatsApp ? "paid" : "pending",
+          items: validItems,
+          subtotal,
+          discountType,
+          discountValue: parseFloat(discountValue) || 0,
+          discountAmount,
+          total,
+          notes: notes || undefined,
+        });
+      }
 
       if (sendWhatsApp) {
         await sendInvoiceViaWhatsApp(invoice, settings, categories);
@@ -188,12 +267,6 @@ export default function CreateInvoiceScreen() {
       setIsSaving(false);
     }
   };
-
-  const filteredCustomers = customers.filter((c) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return c.name.toLowerCase().includes(query) || c.phone.includes(query);
-  });
 
   return (
     <ThemedView style={styles.container}>
@@ -340,7 +413,9 @@ export default function CreateInvoiceScreen() {
           disabled={isSaving}
           style={[styles.footerButton, { backgroundColor: theme.backgroundSecondary }]}
         >
-          <ThemedText style={{ color: theme.text }}>Save Invoice</ThemedText>
+          <ThemedText style={{ color: theme.text }}>
+            {editingInvoice ? "Save Changes" : "Save Invoice"}
+          </ThemedText>
         </Button>
         <Button
           onPress={() => handleSaveInvoice(true)}
@@ -349,7 +424,9 @@ export default function CreateInvoiceScreen() {
         >
           <View style={styles.whatsappButtonContent}>
             <Feather name="send" size={18} color="#FFFFFF" />
-            <ThemedText style={{ color: "#FFFFFF", marginLeft: Spacing.sm }}>Generate & Send</ThemedText>
+            <ThemedText style={{ color: "#FFFFFF", marginLeft: Spacing.sm }}>
+              {editingInvoice ? "Update & Send" : "Generate & Send"}
+            </ThemedText>
           </View>
         </Button>
       </View>
@@ -361,7 +438,7 @@ export default function CreateInvoiceScreen() {
         onRequestClose={() => setShowCustomerPicker(false)}
       >
         <ThemedView style={styles.modalContainer}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border, paddingTop: insets.top + Spacing.lg }]}>
             <Pressable onPress={() => setShowCustomerPicker(false)}>
               <ThemedText type="link">Cancel</ThemedText>
             </Pressable>
@@ -379,26 +456,21 @@ export default function CreateInvoiceScreen() {
             />
           </View>
           
-          <FlatList
-            data={filteredCustomers}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <CustomerCard
-                customer={item}
-                totalPurchases={getCustomerTotalPurchases(item.id)}
-                onPress={() => handleSelectCustomer(item)}
-              />
-            )}
-            contentContainerStyle={styles.customerList}
-            ListEmptyComponent={
-              <View style={styles.emptyCustomers}>
-                <ThemedText secondary>No customers found</ThemedText>
-                <Pressable onPress={handleAddNewCustomer} style={styles.addCustomerLink}>
-                  <ThemedText type="link">Add new customer</ThemedText>
-                </Pressable>
-              </View>
-            }
-          />
+          <View style={{ flex: 1 }}>
+            <FlashList
+              data={filteredCustomers}
+              renderItem={renderCustomerItem}
+              getItemType={() => "customer"}
+              ListEmptyComponent={
+                <View style={styles.emptyCustomers}>
+                  <ThemedText secondary>No customers found</ThemedText>
+                  <Pressable onPress={handleAddNewCustomer} style={styles.addCustomerLink}>
+                    <ThemedText type="link">Add new customer</ThemedText>
+                  </Pressable>
+                </View>
+              }
+            />
+          </View>
         </ThemedView>
       </Modal>
 
@@ -414,7 +486,7 @@ export default function CreateInvoiceScreen() {
         >
           <View style={[styles.categoryModalContent, { backgroundColor: theme.backgroundRoot }]}>
             <ThemedText type="h4" style={styles.categoryModalTitle}>Select Category</ThemedText>
-            {(categories.length > 0 ? categories : DefaultCategories.map(c => ({ categoryId: c.id, label: c.label, icon: c.icon }))).map((cat: any) => (
+            {(categories.length > 0 ? categories : DefaultCategories.map(c => ({ categoryId: c.id, label: c.label, icon: c.icon })).sort((a, b) => a.label.localeCompare(b.label))).map((cat: any) => (
               <Pressable
                 key={cat.categoryId || cat.id}
                 onPress={() => showCategoryPicker && handleSelectCategory(showCategoryPicker, cat.categoryId || cat.id)}

@@ -9,7 +9,7 @@ import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type RootStackParamList = {
   Main: undefined;
-  CreateInvoice: { customerId?: string } | undefined;
+  CreateInvoice: { customerId?: string; invoiceId?: string } | undefined;
   CustomerDetail: { customerId: string };
   InvoiceDetail: { invoiceId: string };
   CreateCustomer: undefined;
