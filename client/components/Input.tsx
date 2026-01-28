@@ -7,9 +7,10 @@ import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
+  helperText?: string;
 }
 
-export function Input({ label, error, style, ...props }: InputProps) {
+export function Input({ label, error, helperText, style, ...props }: InputProps) {
   const { theme } = useTheme();
 
   return (
@@ -36,6 +37,10 @@ export function Input({ label, error, style, ...props }: InputProps) {
         <ThemedText type="caption" style={[styles.error, { color: theme.error }]}>
           {error}
         </ThemedText>
+      ) : helperText ? (
+        <ThemedText type="caption" style={[styles.helper, { color: theme.placeholder }]}>
+          {helperText}
+        </ThemedText>
       ) : null}
     </View>
   );
@@ -58,6 +63,9 @@ const styles = StyleSheet.create({
     textAlignVertical: "center",
   },
   error: {
+    marginTop: Spacing.xs,
+  },
+  helper: {
     marginTop: Spacing.xs,
   },
 });

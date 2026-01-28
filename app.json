@@ -2,7 +2,7 @@
   "expo": {
     "name": "Nazaara",
     "slug": "nazaara-billing",
-    "version": "1.0.2",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nazaara",
@@ -22,7 +22,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.nazaara.billing",
-      "versionCode": 3,
+      "versionCode": 5,
       "usesCleartextTraffic": true,
       "networkSecurityConfig": "./android-network-security-config.xml"
     },

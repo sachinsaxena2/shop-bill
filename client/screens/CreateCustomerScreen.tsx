@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +14,7 @@ export default function CreateCustomerScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const isSavingRef = useRef(false);
+  const phoneCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -21,8 +22,65 @@ export default function CreateCustomerScreen() {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Check for existing customer when phone number reaches 10 digits
+  useEffect(() => {
+    // Clear any pending timeout
+    if (phoneCheckTimeoutRef.current) {
+      clearTimeout(phoneCheckTimeoutRef.current);
+    }
 
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    
+    // Only check if we have exactly 10 digits
+    if (cleanPhone.length === 10) {
+      // Debounce the check by 500ms
+      phoneCheckTimeoutRef.current = setTimeout(async () => {
+        setIsCheckingPhone(true);
+        try {
+          const existingCustomer = await storage.getCustomerByPhone(cleanPhone);
+          if (existingCustomer) {
+            setErrors(prev => ({ 
+              ...prev, 
+              phone: `Customer "${existingCustomer.name}" already exists with this phone number` 
+            }));
+          } else {
+            // Clear phone error if customer doesn't exist
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.phone;
+              return newErrors;
+            });
+          }
+        } catch (error) {
+          console.error("Error checking phone:", error);
+        } finally {
+          setIsCheckingPhone(false);
+        }
+      }, 500);
+    } else if (cleanPhone.length > 10) {
+      // If more than 10 digits, show format error
+      setErrors(prev => ({ 
+        ...prev, 
+        phone: "Phone number should be exactly 10 digits" 
+      }));
+    } else {
+      // Clear phone error for less than 10 digits
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.phone;
+        return newErrors;
+      });
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (phoneCheckTimeoutRef.current) {
+        clearTimeout(phoneCheckTimeoutRef.current);
+      }
+    };
+  }, [phone]);
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -34,6 +92,9 @@ export default function CreateCustomerScreen() {
       newErrors.phone = "Phone number is required";
     } else if (!/^[0-9]{10}$/.test(phone.replace(/[^0-9]/g, ""))) {
       newErrors.phone = "Please enter a valid 10-digit phone number";
+    } else if (errors.phone && errors.phone.includes("already exists")) {
+      // Keep the existing phone error if customer already exists
+      newErrors.phone = errors.phone;
     }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -94,6 +155,7 @@ export default function CreateCustomerScreen() {
           value={phone}
           onChangeText={setPhone}
           error={errors.phone}
+          helperText={isCheckingPhone ? "Checking if customer exists..." : undefined}
           keyboardType="phone-pad"
         />
         
